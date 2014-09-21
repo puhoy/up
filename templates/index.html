@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>HTML5 / jQuery</title>
+        <link rel="stylesheet" href="static/css/styles.css" />
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script> 
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    </head>
+    <body>
+
+    <div id="wrap">
+
+        <div id="droparea">
+            <h1>DROP FILES HERE</h1>
+            <p>(or click to select...)</p>
+        </div>
+
+        <div id="liste" >
+            {% for key in files %}
+
+            <p>@{{ key.time }}:<a href="{{ url_for('download', filename=key.path) }}">
+                {% if key.isImage %}
+                    <img src="{{ url_for('download', filename=key.path) }}" width="50" height="50" alt="thumbnail" border="1">
+                {% endif %}
+            {{ key.filename }}</a></p>
+            {% endfor %}
+
+        </div>
+    </div>
+        <script src="static/js/dropzone.js"></script>
+<script>
+  Dropzone.autoDiscover = false;
+    var myDropzone = new Dropzone("div#droparea", { url: "/upload"});
+    Dropzone.options.myDropzone = {
+  init: function() {
+    this.on("addedfile", function(file) { alert("Added file.");
+    location.reload()
+    });
+  }
+}
+
+  myDropzone.on("complete", function(file) {
+  location.reload()
+  });
+
+
+
+</script>
+    <!--<script src="static/js/app.js"></script>-->
+    </body>
+</html>
+

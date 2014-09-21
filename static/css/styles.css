@@ -1,0 +1,29 @@
+html{
+	min-height: 100%;
+	position: relative;
+	
+}
+
+#wrap{
+    width:100%;
+    font-family:'Times New Roman',Times,serif;
+}
+
+#liste{
+    width:100%;
+    text-align:center;
+}
+
+
+#droparea{
+    border: 1px solid grey;
+	border-radius: 3px;
+	position: relative;
+	text-align:center;
+	margin-left: auto;
+    margin-right: auto;
+	overflow: hidden;
+	padding-bottom: 40px;
+	padding-right: 50px;
+    width: 90%;
+}
