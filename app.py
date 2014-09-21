@@ -36,10 +36,9 @@ def index():
         for f in files:
             print f
             if not f.startswith('.'):
-                print 'mhm'
                 filelist.append(filething(os.path.join(root, f)))
-    print filelist
     return render_template("index.html", files=filelist)
+
 
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -51,34 +50,19 @@ def upload():
             os.mkdir(filepath)
             filename = os.path.join(filepath, file.filename)
             file.save(filename)
-            return redirect(url_for('index'))
+            return jsonify(name=file.filename,
+                       size=os.path.getsize(filepath),
+                       url=url_for('download', filename=filepath)
+            )
+            #return redirect(url_for('index'))
         else:
             return jsonify(error='ext name error')
 
 
 @app.route('/dl/<path:filename>', methods=['GET', 'POST'])
 def download(filename):
-    print filename
     return send_from_directory(directory='', filename=filename)
 
-
-
-'''
-@app.route('/upload', methods=['POST'])
-def upload():
-    if request.method == 'POST':
-        files = request.files.getlist('file[]')
-        for f in files:
-            if f and allowed_file(f.filename):
-                filename = secure_filename(f.filename)
-                updir = os.path.join(basedir, 'upload/')
-                f.save(os.path.join(updir, filename))
-                file_size = os.path.getsize(os.path.join(updir, filename))
-            else:
-                app.logger.info('ext name error')
-                return jsonify(error='ext name error')
-        return jsonify(name=filename, size=file_size)
-'''
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
@@ -89,6 +73,36 @@ def isImage(filename):
         return True
     else:
         return False
+
+'''
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
+    if request.method == 'GET':
+        # we are expected to return a list of dicts with infos about the already available files:
+        file_infos = []
+        for file_name in list_files():
+            file_url = url_for('download', file_name=file_name)
+            file_size = get_file_size(file_name)
+            file_infos.append(dict(name=file_name,
+                                   size=file_size,
+                                   url=file_url))
+        return jsonify(files=file_infos)
+
+    if request.method == 'POST':
+        # we are expected to save the uploaded file and return some infos about it:
+        #                              vvvvvvvvv   this is the name for input type=file
+        data_file = request.files.get('data_file')
+        file_name = data_file.filename
+        save_file(data_file, file_name)
+        file_size = get_file_size(file_name)
+        file_url = url_for('download', file_name=file_name)
+        # providing the thumbnail url is optional
+        thumbnail_url = url_for('thumbnail', file_name=file_name)
+        return jsonify(name=file_name,
+                       size=file_size,
+                       url=file_url,
+                       thumbnail=thumbnail_url)
+'''
 
 if __name__ == "__main__":
     app.run(debug=True)

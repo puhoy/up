@@ -4,6 +4,10 @@ html{
 	
 }
 
+.bar {
+    height: 18px;
+    background: green;
+}
 #wrap{
     width:100%;
     font-family:'Times New Roman',Times,serif;
@@ -15,7 +19,7 @@ html{
 }
 
 
-#droparea{
+#dropzone{
     border: 1px solid grey;
 	border-radius: 3px;
 	position: relative;

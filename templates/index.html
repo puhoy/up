@@ -10,12 +10,40 @@
     </head>
     <body>
 
-    <div id="wrap">
+<script type="text/javascript" src="static/js/vendor/jquery.ui.widget.js"></script>
+<script type="text/javascript" src="static/js/jquery.iframe-transport.js"></script>
+<script type="text/javascript" src="static/js/jquery.fileupload.js"></script>
 
-        <div id="droparea">
-            <h1>DROP FILES HERE</h1>
-            <p>(or click to select...)</p>
-        </div>
+
+<script type="text/javascript" src="{{ url_for('static', filename='js/jquery.iframe-transport.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/jquery.fileupload.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/jquery.fileupload-process.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/jquery.fileupload-audio.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/jquery.fileupload-video.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/jquery.fileupload-validate.js') }}"></script>
+<div id="wrap">
+<div id="dropzone">
+    <h1>DROP FILES HERE</h1>
+    <p>(or use the button)</p>
+<input id="fileupload" type="file" name="file" data-url="/upload" multiple>
+</div>
+
+<script>
+$(function () {
+    $('#fileupload').fileupload({
+        dataType: 'json',
+        sequentialUploads: true
+    });
+});
+
+var dropZone = $('#fileupload').fileupload(
+    'option',
+    'dropZone'
+);
+
+</script>
+
+
 
         <div id="liste" >
             {% for key in files %}
@@ -29,26 +57,7 @@
 
         </div>
     </div>
-        <script src="static/js/dropzone.js"></script>
-<script>
-  Dropzone.autoDiscover = false;
-    var myDropzone = new Dropzone("div#droparea", { url: "/upload"});
-    Dropzone.options.myDropzone = {
-  init: function() {
-    this.on("addedfile", function(file) { alert("Added file.");
-    location.reload()
-    });
-  }
-}
 
-  myDropzone.on("complete", function(file) {
-  location.reload()
-  });
-
-
-
-</script>
-    <!--<script src="static/js/app.js"></script>-->
     </body>
 </html>
 
