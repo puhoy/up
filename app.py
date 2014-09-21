@@ -9,24 +9,23 @@ import time
 
 app = Flask(__name__)
 app.config.from_object(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['UPLOAD_FOLDER'] = os.path.normpath('uploads')
 Bootstrap(app)
 
-ALLOWED_EXTENSIONS = ['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'zip', 'mp3', 'rar']
+ALLOWED_EXTENSIONS = ['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'zip', 'mp3', 'rar', 'tar', 'gz']
 
 class filething():
     def __init__(self, path):
-        self.path = path
+        realpath = os.path.join(app.config['UPLOAD_FOLDER'], path)
+        self.path=path
         self.dirname = os.path.dirname(path)
         self.filename = os.path.basename(path)
-        self.time = time.strftime('%m/%d/%Y', time.gmtime(os.path.getmtime(path)))
+        self.time = time.strftime('%m/%d/%Y', time.gmtime(os.path.getmtime(realpath)))
         self.isImage = isImage(self.filename)
         pass
 
     def __repr__(self):
         return self.path
-
-
 
 @app.route("/")
 def index():
@@ -34,10 +33,11 @@ def index():
     for root, dirs, files in os.walk(app.config['UPLOAD_FOLDER']):
         dirs.sort(reverse=True)
         for f in files:
-            print f
             if not f.startswith('.'):
-                filelist.append(filething(os.path.join(root, f)))
-    return render_template("index.html", files=filelist)
+                path = os.path.normpath(os.path.join(root[len(app.config['UPLOAD_FOLDER'])+1:]))
+                print path
+                filelist.append(filething(os.path.join(path, f)))
+    return render_template("index.html", files=filelist, extensions=ALLOWED_EXTENSIONS)
 
 
 @app.route('/upload', methods=['POST'])
@@ -59,9 +59,9 @@ def upload():
             return jsonify(error='ext name error')
 
 
-@app.route('/dl/<path:filename>', methods=['GET', 'POST'])
+@app.route('/downloads/<path:filename>', methods=['GET', 'POST'])
 def download(filename):
-    return send_from_directory(directory='', filename=filename)
+    return send_from_directory(directory=app.config['UPLOAD_FOLDER'], filename=filename)
 
 
 def allowed_file(filename):
@@ -105,4 +105,4 @@ def upload():
 '''
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=8080)

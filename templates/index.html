@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8" />
-        <title>HTML5 / jQuery</title>
+        <title>Up!</title>
         <link rel="stylesheet" href="static/css/styles.css" />
         <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script> 
 
@@ -18,21 +18,36 @@
 <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.iframe-transport.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.fileupload.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.fileupload-process.js') }}"></script>
-<script type="text/javascript" src="{{ url_for('static', filename='js/jquery.fileupload-audio.js') }}"></script>
-<script type="text/javascript" src="{{ url_for('static', filename='js/jquery.fileupload-video.js') }}"></script>
-<script type="text/javascript" src="{{ url_for('static', filename='js/jquery.fileupload-validate.js') }}"></script>
+
 <div id="wrap">
 <div id="dropzone">
     <h1>DROP FILES HERE</h1>
     <p>(or use the button)</p>
 <input id="fileupload" type="file" name="file" data-url="/upload" multiple>
+<div id="progress">
+    <div class="bar" style="width: 0%;"></div>
+</div>
+    <p>allowed extensions: {{ extensions }}</p>
 </div>
 
 <script>
 $(function () {
     $('#fileupload').fileupload({
         dataType: 'json',
-        sequentialUploads: true
+        sequentialUploads: true,
+
+            progressall: function (e, data) {
+        var progress = parseInt(data.loaded / data.total * 100, 10);
+        $('#progress .bar').css(
+            'width',
+            progress + '%'
+        );
+    },
+
+    done: function (e, data) {
+                window.location.reload();
+            }
+
     });
 });
 
@@ -41,16 +56,22 @@ var dropZone = $('#fileupload').fileupload(
     'dropZone'
 );
 
+
+
+
+
+
+
 </script>
 
-
-
+    <br>
         <div id="liste" >
             {% for key in files %}
 
             <p>@{{ key.time }}:<a href="{{ url_for('download', filename=key.path) }}">
                 {% if key.isImage %}
-                    <img src="{{ url_for('download', filename=key.path) }}" width="50" height="50" alt="thumbnail" border="1">
+                    <img src="{{ url_for('download', filename=key.path) }}"
+                         width="50" height="50" alt="thumbnail" border="1">
                 {% endif %}
             {{ key.filename }}</a></p>
             {% endfor %}
