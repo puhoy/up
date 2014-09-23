@@ -49,8 +49,9 @@ def mvToUploadDir(filename):
     now = datetime.now()
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], "%s" % (now.strftime("%Y-%m-%d-%H-%M-%S-%f")))
     os.mkdir(filepath)
-    os.rename(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename), os.path.join(filepath, filename) )
-    pass
+    newpath=os.path.join(filepath, filename)
+    os.rename(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename), newpath )
+    return newpath
 
 
 @app.route('/upload', methods=['POST'])
@@ -76,13 +77,14 @@ def upload():
                 f.write(value.stream.read())
 
             if (fsize - end_bytes) == 1:
-                mvToUploadDir(filename)
+                filename=mvToUploadDir(filename)
+
 
 
         else:
             # this is not a chunked request, so just save the whole file
             value.save(filename)
-            mvToUploadDir(filename)
+            filename=mvToUploadDir(filename)
 
             # send response with appropriate mime type header
         return jsonify({"name": value.filename,
