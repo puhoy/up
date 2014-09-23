@@ -23,7 +23,7 @@
 <div id="dropzone">
     <h1>DROP FILES HERE</h1>
     <p>(or use the button)</p>
-<input id="fileupload" type="file" name="file" data-url="/upload" multiple>
+<input id="fileupload" type="file" name="files" data-url="/upload" multiple>
 <div id="progress">
     <div class="bar" style="width: 0%;"></div>
 </div>
@@ -51,19 +51,16 @@ $(function () {
     });
 });
 
+$('#fileupload').fileupload({
+    maxChunkSize: 10000000 // 10 MB
+});
+
 var dropZone = $('#fileupload').fileupload(
     'option',
     'dropZone'
 );
 
-
-
-
-
-
-
 </script>
-
     <br>
         <div id="liste" >
             {% for key in files %}
@@ -75,10 +72,8 @@ var dropZone = $('#fileupload').fileupload(
                 {% endif %}
             {{ key.filename }}</a></p>
             {% endfor %}
-
         </div>
     </div>
-
     </body>
 </html>
 
