@@ -27,6 +27,9 @@ class filething():
         self.filename = os.path.basename(path)
         self.time = time.strftime('%m/%d/%Y', time.gmtime(os.path.getmtime(realpath)))
         self.isImage = isImage(self.filename)
+
+        self.filesize=os.path.getsize(realpath)
+
         pass
 
     def __repr__(self):
