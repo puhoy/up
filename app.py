@@ -81,6 +81,8 @@ def upload():
 
                 if (fsize - end_bytes) == 1:
                     filename=mvToUploadDir(filename)
+                else:
+                    filename=os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename)
 
             else:
                 # this is not a chunked request, so just save the whole file
