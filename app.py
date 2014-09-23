@@ -53,7 +53,7 @@ def mvToUploadDir(filename):
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], "%s" % (now.strftime("%Y-%m-%d-%H-%M-%S-%f")))
     os.mkdir(filepath)
     newpath=os.path.join(filepath, filename)
-    os.rename(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename), newpath )
+    os.rename(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename), newpath)
     return newpath
 
 
@@ -64,32 +64,30 @@ def upload():
         files = request.files
 
         # assuming only one file is passed in the request
-        key = files.keys()[0]
-        value = files[key] # this is a Werkzeug FileStorage object
-        filename = value.filename
+        for key in files.keys():
+            value = files[key] # this is a Werkzeug FileStorage object
+            filename = value.filename
 
-        if 'Content-Range' in request.headers:
-            # extract starting byte from Content-Range header string
-            range_str = request.headers['Content-Range']
-            start_bytes = int(range_str.split(' ')[1].split('-')[0])
-            end_bytes= int(range_str.split(' ')[1].split('-')[1].split('/')[0])
-            fsize = int(range_str.split(' ')[1].split('-')[1].split('/')[1])
-            # append chunk to the file on disk, or create new
-            with open(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename), 'a') as f:
-                f.seek(start_bytes)
-                f.write(value.stream.read())
+            if 'Content-Range' in request.headers:
+                # extract starting byte from Content-Range header string
+                range_str = request.headers['Content-Range']
+                start_bytes = int(range_str.split(' ')[1].split('-')[0])
+                end_bytes= int(range_str.split(' ')[1].split('-')[1].split('/')[0])
+                fsize = int(range_str.split(' ')[1].split('-')[1].split('/')[1])
+                # append chunk to the file on disk, or create new
+                with open(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename), 'a') as f:
+                    f.seek(start_bytes)
+                    f.write(value.stream.read())
 
-            if (fsize - end_bytes) == 1:
+                if (fsize - end_bytes) == 1:
+                    filename=mvToUploadDir(filename)
+
+            else:
+                # this is not a chunked request, so just save the whole file
+                value.save(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename))
                 filename=mvToUploadDir(filename)
 
-
-
-        else:
-            # this is not a chunked request, so just save the whole file
-            value.save(filename)
-            filename=mvToUploadDir(filename)
-
-            # send response with appropriate mime type header
+                # send response with appropriate mime type header
         return jsonify({"name": value.filename,
                     "size": os.path.getsize(filename),
                     "url": 'uploads/' + value.filename,
