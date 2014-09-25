@@ -24,6 +24,9 @@ ALLOWED_EXTENSIONS = ['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'zip', '
 MAX_FILE = pow(1000, 3)
 MAX_FOLDER = 1073741824*10
 
+MAXCOMMENTS = 15
+
+
 class filething():
     def __init__(self, path):
         self.realpath = os.path.join(app.config['UPLOAD_FOLDER'], path)
@@ -92,6 +95,8 @@ def addComment(name, comment):
     c['time']=now.strftime("%Y-%m-%d-%H-%M-%S-%f")
     c['username'] = name
     allComments = getComments()
+    while len(allComments) > MAXCOMMENTS:
+        allComments.pop(0)
     allComments.append(c)
     with open('comments.json', 'w') as outfile:
         json.dump(allComments, outfile)
@@ -99,7 +104,8 @@ def addComment(name, comment):
 
 @app.route("/comment", methods=['POST'])
 def comment():
-    addComment(request.form['username'], request.form['text'])
+    if request.form['text'] != "":
+        addComment(request.form['username'], request.form['text'])
     return jsonify({'status': "success"})
 
 @app.route("/getcomments", methods=['POST'])
