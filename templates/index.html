@@ -4,11 +4,12 @@
         <meta charset="utf-8" />
         <title>Up!</title>
         <link rel="stylesheet" href="static/css/styles.css" />
-        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script> 
+        <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
 
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
     </head>
-    <body>
+
+    <body onLoad='getComments()'>
 
 <script type="text/javascript" src="static/js/vendor/jquery.ui.widget.js"></script>
 <script type="text/javascript" src="static/js/jquery.iframe-transport.js"></script>
@@ -21,15 +22,26 @@
 
 <div id="wrap">
 <div id="dropzone">
-    <h1>DROP FILES HERE</h1>
-    <p>(or use the button)</p>
-<input id="fileupload" type="file" name="files" data-url="/upload" multiple>
-<div id="progress">
-    <div class="bar" style="width: 0%;"></div>
-</div>
+    <h1>DROP FILES HERE</h1> (or use the button)
     <p>allowed extensions: {{ extensions }}</p>
-</div>
+    <p>max. filesize: {{ max_fs|filesizeformat }}</p>
+    <p>used: {{ files|sum(attribute='filesize')|filesizeformat }} / {{ sz|filesizeformat }}</p>
+    <input id="fileupload" type="file" name="files" data-url="/upload" style="margin: auto;" multiple>
+    <div id="progress">
+        <div class="bar" style="width: 0%;"></div>
+    </div>
 
+    {% with messages = get_flashed_messages() %}
+{% if messages %}
+
+    {%- for msg in messages %}
+      <div class="alert alert-info">{{ msg }}</div>
+    {% endfor -%}
+
+{% endif %}{% endwith %}
+
+
+</div>
 <script>
 $(function () {
     $('#fileupload').fileupload({
@@ -45,14 +57,20 @@ $(function () {
     },
 
     done: function (e, data) {
-                window.location.reload();
-            }
+               window.location.reload();
+            },
+
+    success: function (result, textStatus, jqXHR) {window.location.reload();/* ... */},
+    error: function (jqXHR, textStatus, errorThrown) {window.location.reload();/* ... */},
+    complete: function (result, textStatus, jqXHR) {window.location.reload();/* ... */}
+
 
     });
 });
 
 $('#fileupload').fileupload({
-    maxChunkSize: 10000000 // 10 MB
+    maxChunkSize: 10000000, // 10 MB
+    maxFileSize: {{ max_fs }} // 1GB
 });
 
 var dropZone = $('#fileupload').fileupload(
@@ -62,7 +80,8 @@ var dropZone = $('#fileupload').fileupload(
 
 </script>
     <br>
-        <div id="liste" >
+        <div class="row">
+        <div class="col-md-8" id="liste" >
             {% for key in files %}
 
             <p>@{{ key.time }}:<a href="{{ url_for('download', filename=key.path) }}">
@@ -73,7 +92,53 @@ var dropZone = $('#fileupload').fileupload(
             {{ key.filename }}</a> ({{ key.filesize|filesizeformat }})</p>
             {% endfor %}
         </div>
-    </div>
+        <div class="col-md-4">
+
+            <h2>COMMENTS</h2>
+
+                {{ cform.csrf_token }}
+                Name: {{ cform.username() }}<br>
+                Text: {{ cform.text() }}
+            <input type="button" value="send" onclick="sendcomment('{{ cform.text.id }}', '{{ cform.username.id }}');">
+            <p><span id="posts" ></span></p>
+        </div>
+        </div>
+</div>
+
+<script>
+function getComments() {
+    $('#posts').empty();
+    $.post('/getcomments')
+    .done(function(getcomments) {
+        var erg=getcomments['all']
+        for (var key in erg) {
+            $('#posts').append("<p><strong>" + erg[key].username + '</strong> @' + erg[key].time + ": <br>" + erg[key].text + "</p>");
+        }
+    }).fail(function() {
+    })
+    ;
+}
+
+function sendcomment(comment, username) {
+    $('#posts').empty();
+    var comment = document.getElementById(comment).value
+    var uname = document.getElementById(username).value
+    if (uname == ""){
+        uname = "Anonymous"
+    }
+    $.post('/comment', {
+        text: comment,
+        username: uname
+    }).done(function() {
+        getComments()
+    }).fail(function() {
+    })
+    ;
+
+}
+
+    </script>
+
     </body>
 </html>
 
