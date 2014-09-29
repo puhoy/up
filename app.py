@@ -193,7 +193,7 @@ def download(filename):
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
-def catchall():
+def catchall(path):
     return redirect(url_for('index'))
 
 
