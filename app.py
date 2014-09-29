@@ -61,10 +61,16 @@ def getFileList():
     filelist = []
     for root, dirs, files in os.walk(app.config['UPLOAD_FOLDER']):
         dirs.sort(reverse=True)
+        path = os.path.normpath(os.path.join(root[len(app.config['UPLOAD_FOLDER'])+1:]))
         for f in files:
             if not f.startswith('.'):
-                path = os.path.normpath(os.path.join(root[len(app.config['UPLOAD_FOLDER'])+1:]))
                 filelist.append(filething(os.path.join(path, f)))
+            else:
+                tdiff = datetime.today() - datetime.fromtimestamp(os.path.getmtime(os.path.join(app.config['UPLOAD_FOLDER'], path, f)))
+                if tdiff.days > 2:
+                    print "removing temp upload: " + str(os.path.join(app.config['UPLOAD_FOLDER'], path, f)) + " (" + tdiff.days + " old)"
+                    os.remove(f)
+
     return filelist
 
 def getUsedSpace():
