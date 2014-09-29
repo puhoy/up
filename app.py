@@ -68,8 +68,8 @@ def getFileList():
             else:
                 tdiff = datetime.today() - datetime.fromtimestamp(os.path.getmtime(os.path.join(app.config['UPLOAD_FOLDER'], path, f)))
                 if tdiff.days > 2:
-                    print "removing temp upload: " + str(os.path.join(app.config['UPLOAD_FOLDER'], path, f)) + " (" + tdiff.days + " old)"
-                    os.remove(f)
+                    print "removing temp upload: " + str(os.path.join(app.config['UPLOAD_FOLDER'], path, f)) + " (" + str(tdiff.days) + " old)"
+                    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], path, f))
 
     return filelist
 
@@ -190,6 +190,12 @@ def upload():
 @app.route('/downloads/<path:filename>', methods=['GET', 'POST'])
 def download(filename):
     return send_from_directory(directory=app.config['UPLOAD_FOLDER'], filename=filename)
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def catchall():
+    return redirect(url_for('index'))
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
