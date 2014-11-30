@@ -50,6 +50,9 @@ $(function () {
         multiple:true,
             progressall: function (e, data) {
         var progress = parseInt(data.loaded / data.total * 100, 10);
+        if (progress == 100) {
+            window.location.reload();
+        }
         $('#progress .bar').css(
             'width',
             progress + '%'
@@ -60,9 +63,7 @@ $(function () {
                window.location.reload();
             },
 
-    success: function (result, textStatus, jqXHR) {window.location.reload();/* ... */},
     error: function (jqXHR, textStatus, errorThrown) {window.location.reload();/* ... */},
-    complete: function (result, textStatus, jqXHR) {window.location.reload();/* ... */}
 
 
     });
@@ -84,7 +85,7 @@ var dropZone = $('#fileupload').fileupload(
         <div class="col-md-8" id="liste" >
             {% for key in files %}
 
-            <p>@{{ key.time }}:<a href="{{ url_for('download', filename=key.path) }}">
+            <p>@{{ key.humantime }}:<a href="{{ url_for('download', filename=key.path) }}">
                 {% if key.isImage %}
                     <img src="{{ url_for('download', filename=key.path) }}"
                          width="50" height="50" alt="thumbnail" border="1">

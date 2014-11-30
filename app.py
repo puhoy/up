@@ -8,44 +8,62 @@ from flask_bootstrap import Bootstrap
 import time
 import forms
 import json
+import humanize
+
+import argparse
+
 
 app = Flask(__name__)
+app.config['CSRF_ENABLED'] = True
+app.secret_key = os.urandom(24)
 app.config.from_object(__name__)
 Bootstrap(app)
-CSRF_ENABLED = True
-basedir = os.path.abspath(os.path.dirname(__file__))
 
-app.config['UPLOAD_FOLDER'] = os.path.normpath('/home/meatpuppet/Daten/Up/')
-app.config['SECRET_KEY'] = 'IAMASUPERSECRETKEY'
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+commentsfile='.comments.json'
 tmp_prefix = '.tmp_'
 ALLOWED_EXTENSIONS = ['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'zip', 'mp3', 'flac', 'rar', 'tar', 'gz', 'tgz',
                       'avi', 'mpg', 'mkv']
-# 1024^3 = 1073741824 = 1GB
-MAX_FILE = pow(1000, 3)
-MAX_FOLDER = 1073741824*10
-
 MAXCOMMENTS = 15
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-p', "--path", default=os.getcwd(), help='path to serve (if not given, current path will be served)')
+# 1024^3 = 1073741824 = 1GB
+parser.add_argument('-f', '--filesize', default=pow(1000, 3), help='default: '+str(pow(1000, 3)) )
+parser.add_argument('-F', '--foldersize', default=pow(1000, 3)*10, help='default: '+str(pow(1000, 3)*10))
+parser.add_argument('-e', '--extensions', default='')  # TODO
+args = parser.parse_args()
+
+print('serving path: %s' % args.path)
+print('max filesize: %s' % humanize.naturalsize(args.filesize))
+print('max foldersize: %s' % humanize.naturalsize(args.foldersize))
+
+app.config['UPLOAD_FOLDER'] = args.path
+MAX_FILE = args.filesize
+MAX_FOLDER = args.foldersize
+
+if not os.path.isfile(commentsfile):
+    open(commentsfile, 'a').close()
 
 class filething():
     def __init__(self, path):
         self.realpath = os.path.join(app.config['UPLOAD_FOLDER'], path)
-        self.path=path
+        self.path = path
         self.dirname = os.path.dirname(path)
         self.filename = os.path.basename(path)
-        self.time = time.strftime('%m/%d/%Y', time.gmtime(os.path.getmtime(self.realpath)))
+        self.time = os.path.getmtime(self.realpath)
+        self.humantime = time.strftime('%m/%d/%Y', time.gmtime(os.path.getmtime(self.realpath)))
         self.isImage = isImage(self.filename)
-
-        self.filesize=os.path.getsize(self.realpath)
-
+        self.filesize = os.path.getsize(self.realpath)
         pass
 
     def delete(self):
-        print "deleting " + self.realpath
-        print 'deleting ' + os.path.dirname(self.realpath)
+        print("deleting " + self.realpath)
+        print('deleting ' + os.path.dirname(self.realpath))
         os.remove(self.realpath)
         os.removedirs(os.path.dirname(self.realpath))
-        del(self)
+        del self
 
     def __repr__(self):
         return self.path
@@ -61,6 +79,7 @@ def getFileList():
     filelist = []
     for root, dirs, files in os.walk(app.config['UPLOAD_FOLDER']):
         dirs.sort(reverse=True)
+
         path = os.path.normpath(os.path.join(root[len(app.config['UPLOAD_FOLDER'])+1:]))
         for f in files:
             if not f.startswith('.'):
@@ -68,9 +87,10 @@ def getFileList():
             else:
                 tdiff = datetime.today() - datetime.fromtimestamp(os.path.getmtime(os.path.join(app.config['UPLOAD_FOLDER'], path, f)))
                 if tdiff.days > 2:
-                    print "removing temp upload: " + str(os.path.join(app.config['UPLOAD_FOLDER'], path, f)) + " (" + str(tdiff.days) + " old)"
+                    print("removing temp upload: " + str(os.path.join(app.config['UPLOAD_FOLDER'], path, f)) + " (" + str(tdiff.days) + " old)")
                     os.remove(os.path.join(app.config['UPLOAD_FOLDER'], path, f))
 
+    filelist.sort(key=lambda ft: ft.time, reverse=True)
     return filelist
 
 def getUsedSpace():
@@ -87,7 +107,7 @@ def delTillFit(size):
         files[-1].delete()
 
 def getComments():
-    with open("comments.json") as json_file:
+    with open(commentsfile) as json_file:
         try:
             comments = json.load(json_file)
         except ValueError:
@@ -104,7 +124,7 @@ def addComment(name, comment):
     while len(allComments) > MAXCOMMENTS:
         allComments.pop(0)
     allComments.append(c)
-    with open('comments.json', 'w') as outfile:
+    with open(commentsfile, 'w') as outfile:
         json.dump(allComments, outfile)
     return allComments
 
@@ -118,7 +138,7 @@ def comment():
 def getComment():
     allComments = getComments()
     allComments.reverse()
-    print allComments
+    print(allComments)
     return jsonify({'all': allComments})
 
 @app.route("/")
@@ -128,8 +148,7 @@ def index():
 
 def mvToUploadDir(filename):
     now = datetime.now()
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], "%s" % (now.strftime("%Y-%m-%d-%H-%M-%S-%f")))
-    os.mkdir(filepath)
+    filepath = app.config['UPLOAD_FOLDER']
     newpath=os.path.join(filepath, filename)
     os.rename(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename), newpath)
     return newpath
@@ -151,8 +170,8 @@ def upload():
                 start_bytes = int(range_str.split(' ')[1].split('-')[0])
                 end_bytes = int(range_str.split(' ')[1].split('-')[1].split('/')[0])
                 fsize = int(range_str.split(' ')[1].split('-')[1].split('/')[1])
-                if fsize > MAX_FILE:
-                    print "too large!"
+                if (fsize > MAX_FILE or fsize > MAX_FOLDER) \
+                        and MAX_FILE is not 0:
                     flash('too large!')
                     return jsonify({'status': 'error'})
                 if fsize + MAX_FOLDER > MAX_FOLDER:
@@ -164,20 +183,18 @@ def upload():
                     f.write(value.stream.read())
 
                 if (fsize - end_bytes) == 1:
-                    filename=mvToUploadDir(filename)
+                    filename = mvToUploadDir(filename)
                 else:
-                    filename=os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename)
+                    filename = os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename)
 
             else:
                 range_str = request.headers['Content-Length']
-                print range_str
                 fsize = int(range_str)
-                print fsize
                 if fsize + MAX_FOLDER > MAX_FOLDER:
                     delTillFit(fsize)
                 # this is not a chunked request, so just save the whole file
                 value.save(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename))
-                filename=mvToUploadDir(filename)
+                filename = mvToUploadDir(filename)
 
                 # send response with appropriate mime type header
         return jsonify({"name": value.filename,
@@ -196,7 +213,6 @@ def download(filename):
 def catchall(path):
     return redirect(url_for('index'))
 
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
@@ -208,6 +224,4 @@ def isImage(filename):
         return False
 
 if __name__ == "__main__":
-    if not os.path.isfile('comments'):
-        open('comments.json', 'a').close()
-    app.run(debug=True, host='0.0.0.0', port=8080)
+    app.run(debug=True, host='0.0.0.0', port=8000)
