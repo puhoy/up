@@ -35,6 +35,10 @@ parser.add_argument('-F', '--foldersize', default=pow(1000, 3)*10, help='default
 parser.add_argument('-e', '--extensions', default='')  # TODO
 args = parser.parse_args()
 
+if not os.path.isdir(args.path):
+    print('no directory %s' % args.path)
+    quit()
+
 print('serving path: %s' % args.path)
 print('max filesize: %s' % humanize.naturalsize(args.filesize))
 print('max foldersize: %s' % humanize.naturalsize(args.foldersize))
@@ -146,12 +150,18 @@ def index():
     commentform = forms.CommentForm()
     return render_template("index.html", files=getFileList(), extensions=ALLOWED_EXTENSIONS, max_fs=MAX_FILE, sz=MAX_FOLDER, cform=commentform )
 
+
 def mvToUploadDir(filename):
-    now = datetime.now()
     filepath = app.config['UPLOAD_FOLDER']
-    newpath=os.path.join(filepath, filename)
-    os.rename(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename), newpath)
+    newpath = os.path.join(filepath, filename)
+    if os.path.isfile(newpath):
+        cnt = 0
+        while os.path.isfile(os.path.join(filepath, str(cnt) + '_' + filename)):
+            cnt += 1
+        newpath = os.path.join(filepath, str(cnt) + '_' + filename)
+    os.rename(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + request.remote_addr + filename), newpath)
     return newpath
+
 
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -178,14 +188,15 @@ def upload():
                     delTillFit(fsize)
 
                 # append chunk to the file on disk, or create new
-                with open(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename), 'a') as f:
+                with open(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + request.remote_addr + filename), 'ab') as f:
                     f.seek(start_bytes)
-                    f.write(value.stream.read())
+                    str=value.stream.read()
+                    f.write(str)
 
                 if (fsize - end_bytes) == 1:
                     filename = mvToUploadDir(filename)
                 else:
-                    filename = os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename)
+                    filename = os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + request.remote_addr + filename)
 
             else:
                 range_str = request.headers['Content-Length']
@@ -193,7 +204,7 @@ def upload():
                 if fsize + MAX_FOLDER > MAX_FOLDER:
                     delTillFit(fsize)
                 # this is not a chunked request, so just save the whole file
-                value.save(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + filename))
+                value.save(os.path.join(app.config['UPLOAD_FOLDER'], tmp_prefix + request.remote_addr + filename))
                 filename = mvToUploadDir(filename)
 
                 # send response with appropriate mime type header
@@ -224,4 +235,4 @@ def isImage(filename):
         return False
 
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=8000)
+    app.run(host='0.0.0.0', port=8000)
