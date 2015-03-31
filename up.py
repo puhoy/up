@@ -58,7 +58,7 @@ class filething():
         self.filename = os.path.basename(path)
         self.time = os.path.getmtime(self.realpath)
         self.humantime = time.strftime('%m/%d/%Y', time.gmtime(os.path.getmtime(self.realpath)))
-        self.isImage = isImage(self.filename)
+        self.isImage = self.isImage()
         self.filesize = os.path.getsize(self.realpath)
         pass
 
@@ -77,6 +77,14 @@ class filething():
             return self.filesize
         else:
             return None
+
+    def isImage(self):
+        imgExt = ['jpg', 'jpeg', 'gif', 'svg', 'png']
+        if '.' in self.filename and self.filename.split('.')[-1] in imgExt:
+            return True
+        else:
+            return False
+
 
 
 def getFileList():
@@ -121,8 +129,8 @@ def getComments():
 def addComment(name, comment):
     now = datetime.now()
     c={}
-    c['text']=comment
-    c['time']=now.strftime("%Y-%m-%d-%H-%M-%S-%f")
+    c['text'] = comment
+    c['time'] = now.strftime("%Y-%m-%d-%H-%M-%S-%f")
     c['username'] = name
     allComments = getComments()
     while len(allComments) > MAXCOMMENTS:
@@ -142,7 +150,7 @@ def comment():
 def getComment():
     allComments = getComments()
     allComments.reverse()
-    print(allComments)
+    #print(allComments)
     return jsonify({'all': allComments})
 
 @app.route("/")
@@ -225,14 +233,8 @@ def catchall(path):
     return redirect(url_for('index'))
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.split('.')[-1] in ALLOWED_EXTENSIONS
 
-def isImage(filename):
-    imgExt=['jpg', 'jpeg', 'gif', 'svg']
-    if '.' in filename and filename.rsplit('.', 1)[1] in imgExt:
-        return True
-    else:
-        return False
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)
